@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPS Backup Time Calculator</title>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<style>
+  .container {
+    padding: 20px;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .form-group {
+    margin-bottom: 15px;
+  }
+  button {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  button:hover {
+    background-color: #0056b3;
+  }
+  #result {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+
+<h1>IPS Backup Time Calculator</h1>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-6">
+      <h2>Calculate Backup Time & Charging Time</h2>
+      <div class="form-group">
+        <label for="fanSelect">Select Number of Fans:</label>
+        <select class="form-control" id="fanSelect">
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="lightSelect">Select Number of Lights:</label>
+        <select class="form-control" id="lightSelect">
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="batteryAhSelect">Select Battery Ah:</label>
+        <select class="form-control" id="batteryAhSelect">
+          <option value="50">50 Ah</option>
+          <option value="100">100 Ah</option>
+          <option value="150">150 Ah</option>
+          <option value="200">200 Ah</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="ipsVaSelect">Select IPS Machine VA Rating:</label>
+        <select class="form-control" id="ipsVaSelect">
+          <option value="600">600 VA</option>
+          <option value="800">800 VA</option>
+          <option value="1000">1000 VA</option>
+          <option value="1200">1200 VA</option>
+        </select>
+      </div>
+      <button onclick="calculateBackupAndChargingTime()">Calculate Times</button>
+      <div id="timeResult"></div>
+    </div>
+    <div class="col-md-6">
+      <h2>Get Battery & IPS Suggestions</h2>
+      <div class="form-group">
+        <label for="requiredBackupTime">Required Backup Time (hours):</label>
+        <input type="number" class="form-control" id="requiredBackupTime" placeholder="Enter required backup time">
+      </div>
+      <div class="form-group">
+        <label for="totalLoad">Total Load (W):</label>
+        <input type="number" class="form-control" id="totalLoad" placeholder="Enter total load">
+      </div>
+      <button class="btn btn-primary" onclick="suggestBatteryAndIPS()">Get Suggestions</button>
+      <div id="suggestionResult"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function calculateBackupAndChargingTime() {
+    var fanCount = parseInt(document.getElementById('fanSelect').value);
+    var lightCount = parseInt(document.getElementById('lightSelect').value);
+    var batteryAh = parseInt(document.getElementById('batteryAhSelect').value);
+    var ipsVa = parseInt(document.getElementById('ipsVaSelect').value);
+
+    // Assumptions
+    var fanWattage = 100; // Average wattage per fan
+    var lightWattage = 60; // Average wattage per light
+    var efficiency = 0.8; // Efficiency of the IPS system (assumed 80%)
+    var chargingCurrentPercentage = 0.2; // Charging current in percentage of battery capacity
+    var chargingEfficiency = 0.9; // Charging efficiency (assumed 90%)
+    var voltage = 12; // Voltage of the IPS system (assumed 12V)
+
+    // Calculate total wattage
+    var totalWattage = (fanCount * fanWattage) + (lightCount * lightWattage);
+
+    // Calculate backup time
+    var backupTimeHours = (batteryAh * voltage * efficiency) / totalWattage;
+    var backupTimeMinutes = backupTimeHours * 60;
+
+    // Calculate charging current and charging time
+    var chargingCurrent = (chargingCurrentPercentage * batteryAh) / chargingEfficiency;
+    var chargingTime = (batteryAh / chargingCurrent) * chargingEfficiency; // Charging time in hours
+
+    // Display total wattage, backup time, and charging time
+    var resultElement = document.getElementById('timeResult');
+    resultElement.innerHTML = `
+      <p><strong>Total Wattage:</strong> ${totalWattage}W</p>
+      <p><strong>Backup Time:</strong> ${backupTimeHours.toFixed(2)} hours (${backupTimeMinutes.toFixed(2)} minutes)</p>
+      <p><strong>Charging Time:</strong> ${chargingTime.toFixed(2)} hours</p>
+    `;
+  }
+
+  function suggestBatteryAndIPS() {
+    var requiredBackupTime = parseFloat(document.getElementById('requiredBackupTime').value);
+    var totalLoad = parseFloat(document.getElementById('totalLoad').value);
+
+    // Assumptions
+    var efficiency = 0.8; // Efficiency of the IPS system (assumed 80%)
+    var powerFactor = 0.85; // Power factor of the load (assumed 0.85)
+    var voltage = 12; // Voltage of the IPS system (assumed 12V)
+
+    // Calculate total power consumption
+    var totalPower = totalLoad / powerFactor;
+
+    // Calculate required battery capacity
+    var requiredBatteryAh = (totalPower * requiredBackupTime) / (voltage * efficiency);
+
+    // Calculate required IPS machine VA rating
+    var requiredIPSVa = totalPower / efficiency;
+
+    // Display suggestions
+    var suggestionResultElement = document.getElementById('suggestionResult');
+    suggestionResultElement.innerHTML = `
+      <p><strong>Required Battery Capacity (Ah):</strong> ${requiredBatteryAh.toFixed(2)}</p>
+      <p><strong>Required IPS Machine VA Rating:</strong> ${requiredIPSVa.toFixed(2)}</p>
+    `;
+  }
+
+  // Attach event listeners to input elements for dynamic calculation
+  document.getElementById('fanSelect').addEventListener('change', calculateBackupAndChargingTime);
+  document.getElementById('lightSelect').addEventListener('change', calculateBackupAndChargingTime);
+  document.getElementById('batteryAhSelect').addEventListener('change', calculateBackupAndChargingTime);
+  document.getElementById('ipsVaSelect').addEventListener('change', calculateBackupAndChargingTime);
+</script>
+
+</body>
+</html>
